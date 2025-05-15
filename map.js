@@ -13,6 +13,7 @@ let circles;
 let radiusScale;
 let timeFilter = -1;
 let timeSlider, selectedTime, anyTimeLabel;
+let stationFlow;
 
 // Helper functions
 function formatTime(minutes) {
@@ -84,7 +85,10 @@ function updateScatterPlot(timeFilter) {
     circles
         .data(filteredStations, (d) => d.short_name) // Ensure D3 tracks elements correctly
         .join('circle') // Ensure the data is bound correctly
-        .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+        .attr('r', (d) => radiusScale(d.totalTraffic)) // Update circle sizes
+        .style('--departure-ratio', (d) =>
+            stationFlow(d.departures / d.totalTraffic)
+        );
 }
 
 function updateTimeDisplay() {
@@ -217,6 +221,9 @@ map.on('load', async () => {
     stations = computeStationTraffic(jsonData.data.stations, trips);
     console.log('Stations Array:', stations);
 
+    // Initialize station flow scale for coloring
+    stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
+
     // Select existing SVG element from the DOM
     const svg = d3.select('#map').select('svg')
 
@@ -233,7 +240,9 @@ map.on('load', async () => {
         .enter()
         .append('circle')
         .attr('r', 5) // Radius of the circle
-        .attr('fill', 'steelblue') // Circle fill color
+        .style('--departure-ratio', (d) => 
+            stationFlow(d.departures / d.totalTraffic)
+        )
         .attr('stroke', 'white') // Circle border color
         .attr('stroke-width', 1) // Circle border thickness
         .attr('opacity', 0.8)
